@@ -2,6 +2,20 @@ import pandas as pd
 import streamlit as st
 
 
+def calc_general_stats(df: pd.DataFrame):
+    df_data = df.groupby(by='Data')[['Valor']].sum()
+    df_data['lag_1'] = df_data['Valor'].shift(1)
+    df_data['Diferença Mensal'] = df_data['Valor'] - df_data['lag_1']
+    df_data['Diferença Mensal Rel.'] = df_data['Valor'] / df_data['lag_1'] - 1
+    df_data['Média 6M Diferença Mensal'] = df_data['Diferença Mensal'].rolling(6).mean()  # NOQA: E501
+    df_data['Média 12M Diferença Mensal'] = df_data['Diferença Mensal'].rolling(12).mean()  # NOQA: E501
+    df_data['Média 24M Diferença Mensal'] = df_data['Diferença Mensal'].rolling(24).mean()  # NOQA: E501
+
+    df_data = df_data.drop('lag_1', axis=1)
+
+    return df_data
+
+
 st.set_page_config('Minhas finanças', page_icon='💰')
 
 st.markdown(
@@ -47,11 +61,17 @@ if file_upload:
         last_dt = df_instituicao.loc[date]
         st.bar_chart(last_dt)
 
-    df_data = df.groupby(by='Data')[['Valor']].sum()
-    df_data['lag_1'] = df_data['Valor'].shift(1)
-    df_data['Diferença Mensal'] = df_data['Valor'] - df_data['lag_1']
-    df_data['Média 6M Diferença Mensal'] = df_data['Diferença Mensal'].rolling(6).mean()
-    df_data['Média 12M Diferença Mensal'] = df_data['Diferença Mensal'].rolling(12).mean()
-    df_data['Média 24M Diferença Mensal'] = df_data['Diferença Mensal'].rolling(24).mean()
+    exp3 = st.expander('Estatísticas Gerais')
 
-    st.dataframe(df_data)
+    df_stats = calc_general_stats(df)
+
+    columns_config = {
+        'Valor': st.column_config.NumberColumn('Valor', format='R$ %.2f'),
+        'Diferença Mensal': st.column_config.NumberColumn('Diferença Mensal', format='R$ %.2f'),  # NOQA: E501
+        'Média 6M Diferença Mensal': st.column_config.NumberColumn('Média 6M Diferença Mensal', format='R$ %.2f'),  # NOQA: E501
+        'Média 12M Diferença Mensal': st.column_config.NumberColumn('Média 12M Diferença Mensal', format='R$ %.2f'),  # NOQA: E501
+        'Média 24M Diferença Mensal': st.column_config.NumberColumn('Média 24M Diferença Mensal', format='R$ %.2f'),  # NOQA: E501
+        'Diferença Mensal Rel.': st.column_config.NumberColumn('Diferença Mensal Rel.', format='percent'),  # NOQA: E501
+    }
+
+    exp3.dataframe(df_stats, column_config=columns_config)
