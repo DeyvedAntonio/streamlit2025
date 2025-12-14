@@ -46,3 +46,12 @@ if file_upload:
         date = st.selectbox('Filtro Data', options=df_instituicao.index)
         last_dt = df_instituicao.loc[date]
         st.bar_chart(last_dt)
+
+    df_data = df.groupby(by='Data')[['Valor']].sum()
+    df_data['lag_1'] = df_data['Valor'].shift(1)
+    df_data['Diferença Mensal'] = df_data['Valor'] - df_data['lag_1']
+    df_data['Média 6M Diferença Mensal'] = df_data['Diferença Mensal'].rolling(6).mean()
+    df_data['Média 12M Diferença Mensal'] = df_data['Diferença Mensal'].rolling(12).mean()
+    df_data['Média 24M Diferença Mensal'] = df_data['Diferença Mensal'].rolling(24).mean()
+
+    st.dataframe(df_data)
